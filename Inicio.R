@@ -88,7 +88,7 @@ file <- read.csv("BaseDeDados.zoo",sep=" ")
 datas <- file[,1]
 file <- file[,-1]
 base_2 <- zoo(file,order.by = datas)
-
+#base_dados <- base_2
 
 # Cortando o banco de dados amostral: 
 banco_dados_estimacao <- base_dados[1:round(length(base_dados[,5])* 73/100),]
@@ -127,7 +127,6 @@ cor(portfolio_pequeno_retornos)
 
 retornos <- as.timeSeries(portfolio_pequeno_retornos)
 
-efficientPortfolio(retornos[,1])
-x <- c(1,2,3,4)
-is.unsorted(x)
+tangencyPortfolio(retornos)
+
 

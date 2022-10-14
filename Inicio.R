@@ -124,4 +124,10 @@ tranposta_analise <- t(analise_temporaria)
 plot(tranposta_analise)
 
 cor(portfolio_pequeno_retornos)
-fronteira <- portfolioFrontier(portfolio_pequeno_retornos)
+
+retornos <- as.timeSeries(portfolio_pequeno_retornos)
+
+efficientPortfolio(retornos[,1])
+x <- c(1,2,3,4)
+is.unsorted(x)
+

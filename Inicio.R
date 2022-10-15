@@ -89,6 +89,7 @@ datas <- file[,1]
 file <- file[,-1]
 base_2 <- zoo(file,order.by = datas)
 #base_dados <- base_2
+base_dados[,'selic'] <- base_dados[,'selic']/10
 
 # Cortando o banco de dados amostral: 
 banco_dados_estimacao <- base_dados[1:round(length(base_dados[,5])* 73/100),]
@@ -104,8 +105,12 @@ portfolio_medio_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfol
 portfolio_grande_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_grande])/banco_dados_estimacao[,portfolio_grande]))
 
 ##### Calculando a fronteira com o portfolio pequeno #####
+spec <- portfolioSpec()
+setNFrontierPoints(spec) <- 100
+setRiskFreeRate(spec) <- mean(banco_dados_estimacao[,'selic']/10)
+?setTargetReturn
 
-portfolio_pequeno.fronteira <- portfolioFrontier(portfolio_pequeno_retornos)
+portfolio_pequeno.fronteira <- portfolioFrontier(portfolio_pequeno_retornos,spec)
 
 titulo <-  paste("Analise de portfolio Risco e Retorno \n")
 subtitulos <- paste("Ativos: ", paste(portfolio_pequeno,collapse = ', '))
@@ -133,7 +138,7 @@ for (ativo in portfolio_pequeno){
 
 ##### Calculando a fronteira com o portfolio medio #####
 
-portfolio_medio.fronteira <- portfolioFrontier(portfolio_medio_retornos)
+portfolio_medio.fronteira <- portfolioFrontier(portfolio_medio_retornos,spec)
 
 titulo <-  paste("Analise de portfolio Risco e Retorno \n")
 subtitulos <- paste("Ativos: ", paste(portfolio_medio,collapse = ', '))
@@ -160,17 +165,16 @@ for (ativo in portfolio_medio){
 }
 ##### Calculando a fronteira com o portfolio grande#####
 
-portfolio_grande.fronteira <- portfolioFrontier(portfolio_grande_retornos)
+portfolio_grande.fronteira <- portfolioFrontier(portfolio_grande_retornos,spec)
 
 titulo <-  paste("Analise de portfolio Risco e Retorno \n")
-subtitulos <- paste("\nAtivos: ", paste(portfolio_grande[1:8],collapse = ', '),
+subtitulos <- paste("Ativos:", paste(portfolio_grande[1:8],collapse = ', '),
                     '\n',paste(portfolio_grande[9:15],collapse = ', '))
 
 frontierPlot(portfolio_grande.fronteira, col = c('blue', 'red'), pch = 20,
              risk="VaR", title = F)
 
 title(main=titulo, 
-      sub=subtitulos,
       xlab="Risco",
       ylab="Retorno",
       cex.lab=1.5)
@@ -188,6 +192,30 @@ for (ativo in portfolio_grande){
 }
 
 #### Fronteiras ####
-portfolio_pequeno.fronteira
-portfolio_medio.fronteira
-portfolio_grande.fronteira
+resultado_pequeno <- matrix(,nrow=length(getPortfolio(portfolio_pequeno.fronteira)$targetRisk[,1]),ncol=7)
+colnames(resultado_pequeno) <- c("VaR","mean",portfolio_pequeno)
+resultado_pequeno[,"VaR"] <- round(getPortfolio(portfolio_pequeno.fronteira)$targetRisk[,"CVaR"],4)
+resultado_pequeno[,"mean"] <- round(getPortfolio(portfolio_pequeno.fronteira)$targetReturn[,"mean"],4)
+resultado_pequeno[,portfolio_pequeno] <- round(getPortfolio(portfolio_pequeno.fronteira)$weights,4)
+plot(resultado_pequeno[,c("VaR","mean")])
+
+resultado_medio <- matrix(,nrow=length(getPortfolio(portfolio_medio.fronteira)$targetRisk[,1]),ncol=2+length(portfolio_medio))
+colnames(resultado_medio) <- c("VaR","mean",portfolio_medio)
+resultado_medio[,"VaR"] <- round(getPortfolio(portfolio_medio.fronteira)$targetRisk[,"CVaR"],4)
+resultado_medio[,"mean"] <- round(getPortfolio(portfolio_medio.fronteira)$targetReturn[,"mean"],4)
+resultado_medio[,portfolio_medio] <- round(getPortfolio(portfolio_medio.fronteira)$weights,4)
+plot(resultado_medio[,c("VaR","mean")])
+
+resultado_grande <- matrix(,nrow=length(getPortfolio(portfolio_grande.fronteira)$targetRisk[,1]),ncol=2+length(portfolio_grande))
+colnames(resultado_grande) <- c("VaR","mean",portfolio_grande)
+resultado_grande[,"VaR"] <- round(getPortfolio(portfolio_grande.fronteira)$targetRisk[,"CVaR"],4)
+resultado_grande[,"mean"] <- round(getPortfolio(portfolio_grande.fronteira)$targetReturn[,"mean"],4)
+resultado_grande[,portfolio_grande] <- round(getPortfolio(portfolio_grande.fronteira)$weights,4)
+plot(resultado_grande[,c("VaR","mean")])
+
+
+write.csv("resultado_pequeno.csv",resultado_pequeno,sep=';',dec=',')
+write.csv("resultado_medio.csv",resultado_medio,sep=';',dec=',')
+write.csv("resultado_grande.csv",resultado_grande,sep=';',dec=',')
+getwd()
+?portfolioFrontier

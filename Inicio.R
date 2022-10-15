@@ -99,34 +99,95 @@ portfolio_pequeno <- c("BBDC3.SA","CPLE6.SA","ENGI11.SA","HYPE3.SA","TIMS3.SA")
 portfolio_medio <- c(portfolio_pequeno, "VIVT3.SA","RADL3.SA","MRFG3.SA","ENBR3.SA","BRML3.SA")
 portfolio_grande <- c(portfolio_medio,"DXCO3.SA","GGBR4.SA","PRIO3.SA","CCRO3.SA","CYRE3.SA")
 
+portfolio_pequeno_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_pequeno])/banco_dados_estimacao[,portfolio_pequeno]))
+portfolio_medio_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_medio])/banco_dados_estimacao[,portfolio_medio]))
+portfolio_grande_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_grande])/banco_dados_estimacao[,portfolio_grande]))
 
-par(mfrow=c(3,5))
-for (element in portfolio_grande){
-  plot(base_dados[,element],main=element)
-}
+##### Calculando a fronteira com o portfolio pequeno #####
 
-portfolio_pequeno_retornos <- log(lag(base_dados[,portfolio_pequeno])/base_dados[,portfolio_pequeno])
-portfolio_medio_retornos <- log(lag(base_dados[,portfolio_medio])/base_dados[,portfolio_medio])
-portfolio_grande_retornos <- log(lag(base_dados[,portfolio_grande])/base_dados[,portfolio_grande])
+portfolio_pequeno.fronteira <- portfolioFrontier(portfolio_pequeno_retornos)
 
-analise_temporaria <- matrix(,nrow=2,ncol=5)
-colnames(analise_temporaria) <- portfolio_pequeno
-rownames(analise_temporaria) <- c("Risco", "Media")
+titulo <-  paste("Analise de portfolio Risco e Retorno \n")
+subtitulos <- paste("Ativos: ", paste(portfolio_pequeno,collapse = ', '))
+
+frontierPlot(portfolio_pequeno.fronteira, col = c('blue', 'red'), pch = 20,
+             risk="VaR", title = F)
+
+title(main=titulo, 
+      sub=subtitulos,
+      xlab="Risco",
+      ylab="Retorno",
+      cex.lab=1.5)
+
+
+monteCarloPoints(portfolio_pequeno.fronteira, mcSteps = 5000, pch = 20, cex = 0.25,
+                 col="Grey")
 
 for (ativo in portfolio_pequeno){
-  media = mean(portfolio_pequeno_retornos[,ativo])
-  risco = sd(portfolio_pequeno_retornos[,ativo])
-  analise_temporaria[,ativo] <- c(risco, media)
+  media <- mean(portfolio_pequeno_retornos[,ativo])
+  risco <- sd(portfolio_pequeno_retornos[,ativo])
+  paste("Risco: ",risco,"\n Media: ", media, "\n Ativo:", ativo)
+  points(risco,media,col="Black")
+  text(risco,media,ativo,col="Brown", pos = 2)
 }
 
-par(mfrow=c(1,1))
-tranposta_analise <- t(analise_temporaria)
-plot(tranposta_analise)
+##### Calculando a fronteira com o portfolio medio #####
 
-cor(portfolio_pequeno_retornos)
+portfolio_medio.fronteira <- portfolioFrontier(portfolio_medio_retornos)
 
-retornos <- as.timeSeries(portfolio_pequeno_retornos)
+titulo <-  paste("Analise de portfolio Risco e Retorno \n")
+subtitulos <- paste("Ativos: ", paste(portfolio_medio,collapse = ', '))
 
-tangencyPortfolio(retornos)
+frontierPlot(portfolio_medio.fronteira, col = c('blue', 'red'), pch = 20,
+             risk="VaR", title = F)
+
+title(main=titulo, 
+      sub=subtitulos,
+      xlab="Risco",
+      ylab="Retorno",
+      cex.lab=1.5)
 
 
+monteCarloPoints(portfolio_medio.fronteira, mcSteps = 10000, pch = 20, cex = 0.25,
+                 col="Grey")
+
+for (ativo in portfolio_medio){
+  media <- mean(portfolio_medio_retornos[,ativo])
+  risco <- sd(portfolio_medio_retornos[,ativo])
+  paste("Risco: ",risco,"\n Media: ", media, "\n Ativo:", ativo)
+  points(risco,media,col="Black")
+  text(risco,media,ativo,col="Brown", pos = 2)
+}
+##### Calculando a fronteira com o portfolio grande#####
+
+portfolio_grande.fronteira <- portfolioFrontier(portfolio_grande_retornos)
+
+titulo <-  paste("Analise de portfolio Risco e Retorno \n")
+subtitulos <- paste("\nAtivos: ", paste(portfolio_grande[1:8],collapse = ', '),
+                    '\n',paste(portfolio_grande[9:15],collapse = ', '))
+
+frontierPlot(portfolio_grande.fronteira, col = c('blue', 'red'), pch = 20,
+             risk="VaR", title = F)
+
+title(main=titulo, 
+      sub=subtitulos,
+      xlab="Risco",
+      ylab="Retorno",
+      cex.lab=1.5)
+
+
+monteCarloPoints(portfolio_grande.fronteira, mcSteps = 40000, pch = 20, cex = 0.25,
+                 col="Grey")
+
+for (ativo in portfolio_grande){
+  media <- mean(portfolio_grande_retornos[,ativo])
+  risco <- sd(portfolio_grande_retornos[,ativo])
+  paste("Risco: ",risco,"\n Media: ", media, "\n Ativo:", ativo)
+  points(risco,media,col="Black")
+  text(risco,media,ativo,col="Brown", pos = 2)
+}
+
+#### Fronteiras ####
+portfolio_pequeno.fronteira
+portfolio_medio.fronteira
+portfolio_grande.fronteira

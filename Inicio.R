@@ -465,4 +465,8 @@ for (portfolio in portfolios_tangente){
   linha <- c(name,"Tangente",risco,retorno,sharpe)
   dtframe_results <- rbind(dtframe_results,linha) 
 }
-write.table(dtframe_results,sep=";",dec=',',)
+
+numeros <- c("Risco (CVaR)","Retorno","Indice de Sharpe")
+dtframe_results[,numeros] <- as.numeric(as.matrix(dtframe_results[,numeros],ncol=3,nrow=18))
+summary(dtframe_results)
+write.table(file = "Comparacao_portfolios.csv",dtframe_results,sep=";",dec=',')

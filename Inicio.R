@@ -349,14 +349,120 @@ portfolio_uniforme.uniforme <- risco_retorno_portfolio_ingenuo(portfolio_ibov.ha
 points(portfolio_uniforme.uniforme['risco',],portfolio_uniforme.uniforme['retorno',],col="Black",pch=19)
 text(portfolio_uniforme.uniforme['risco',],portfolio_uniforme.uniforme['retorno',],'Carteira Uniforme',col="Black",pos = 3)
 
-portfolio_ibov.min_risk <- minriskPortfolio(portfolio_ibov.have_retornos)
-portfolio_ibov.tangente <- tangencyPortfolio(portfolio_ibov.have_retornos)
+portfolio_ibov.min_risk <- minriskPortfolio(portfolio_ibov.have_retornos,spec)
+portfolio_ibov.tangente <- tangencyPortfolio(portfolio_ibov.have_retornos,spec)
 
 
 #### Portfolios Setoriais ####
+
 setores <- read.csv("SetorEconomico.csv",sep=";")
 tipo_setores <- unique(setores[,'Setor'])
-quantidade_por_setor <- matrix(,nrow(length(tipo_setores)))
+quantidade_por_setor <- matrix(,nrow=(length(tipo_setores)))
+rownames(quantidade_por_setor) <- tipo_setores
+
 for (item in tipo_setores){
-  length(setores[setores[,'Setor'] %in% tipo_setores,'Papel'])
+  quantidade_bruta_por_setor <- setores[setores[,'Setor'] == item,'Papel']
+  quantidade_bruta_por_setor[quantidade_bruta_por_setor == ""] <- NA
+  quantidade_bruta_por_setor <- quantidade_bruta_por_setor[quantidade_bruta_por_setor %in% ativos_desejados]
+  total <- sum(!is.na(quantidade_bruta_por_setor))
+  quantidade_por_setor[item,] <- total
 }
+
+nome_setores <- rownames(quantidade_por_setor)[quantidade_por_setor[,1] > 10]
+# nome_setores <- c("Materiais Básicos","Bens Industriais","Consumo não Cíclico",
+#              "Utilidade Pública","Financeiro")
+
+portfolios <- c()
+for (setor in nome_setores){
+  name_var <- tolower(paste("portfolio_",iconv(gsub(" ","_",setor,fixed = T),to="ASCII//TRANSLIT"),sep=""))
+  portfolios <- c(portfolios, name_var)
+  ativos <- setores[setores[,'Setor'] == setor,'Papel']
+  ativos[ativos == ""] <- NA
+  ativos <- ativos[!is.na(ativos)]
+  ativos <- ativos[ativos %in% ativos_desejados]
+  portfolio_retorno <- as.timeSeries(log(lag(banco_dados_estimacao[,ativos])/banco_dados_estimacao[,ativos]))
+  portfolio_retorno2 <- portfolio_retorno[,!colSums(is.na(portfolio_retorno)) > 1]
+  assign(paste(name_var,".retorno",sep=""), portfolio_retorno2)
+}
+
+for (portfolio in portfolios){
+  assign(paste(portfolio,".ingenua",sep=""),
+         risco_retorno_portfolio_ingenuo(get(paste(portfolio,".retorno",sep=""))))
+}
+
+for (portfolio in portfolios){
+  assign(paste(portfolio,".fronteira",sep=""),
+         portfolioFrontier(get(paste(portfolio,".retorno",sep=""))))
+}
+
+for (portfolio in portfolios){
+  png(file=paste("Graficos/",portfolio,".png",sep=''))
+  frontierPlot(get(paste(portfolio,".fronteira",sep="")), col = c('blue', 'red'), pch = 20,
+               risk="VaR", title = F)
+  
+  monteCarloPoints(get(paste(portfolio,".fronteira",sep="")), mcSteps = 4000, pch = 20, cex = 0.25,
+                   col="Grey")
+  
+  title(main=paste(strsplit(portfolio,"_")[[1]][1],"do setor",paste(strsplit(portfolio,"_")[[1]][-1],collapse = ' '), collapse = ' '), 
+        xlab="Risco (Desvio padrão)",
+        ylab="Retorno",
+        cex.lab=1.5)
+  
+  points(sd(var_ibov),mean(var_ibov),col="Black",pch=19)
+  text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black",pos = 1)
+  
+  
+  dev.off()
+}
+
+#### Analise de todos os portfolios ####
+
+
+portfolios_min_risks <- c("portfolio_ibov.min_risk","portfolio_grande.min_risk",
+                          "portfolio_medio.min_risk","portfolio_pequeno.min_risk")
+for (portfolio in portfolios){
+  var_name <- paste(portfolio,".minrisk",sep="")
+  assign(var_name,
+         minriskPortfolio(get(paste(portfolio,".retorno",sep=""))))
+  portfolios_min_risks <- c(portfolios_min_risks,var_name)
+}
+
+portfolios_tangente <- c("portfolio_ibov.tangente","portfolio_grande.tangente",
+                         "portfolio_medio.tangente","portfolio_pequeno.tangente")
+for (portfolio in portfolios){
+  var_name <- paste(portfolio,".tangente",sep="")
+  assign(var_name,
+         tangencyPortfolio(get(paste(portfolio,".retorno",sep=""))))
+  portfolios_tangente <- c(portfolios_tangente, var_name)
+}
+
+#### Menores Riscos ####
+rf <- round(mean(banco_dados_estimacao[,'selic']),5)
+dtframe_results <- data.frame()
+portfolio <- ''
+for (portfolio in portfolios_min_risks){
+  retorno <- round(getPortfolio(get(portfolio))$targetReturn[['mean']],5)
+  risco <- round(getPortfolio(get(portfolio))$targetRisk[['CVaR']],5)
+  name <- gsub("_"," ",
+               gsub("portfolio_","",
+                    gsub(".min_risk","",
+                         gsub(".minrisk","",portfolio))))
+  sharpe <- round((retorno - rf) / getPortfolio(get(portfolio))$targetRisk[['VaR']],5)
+  linha <- c(name,"Risco Minimo",risco,retorno,sharpe)
+  dtframe_results <- rbind(dtframe_results,linha) 
+}
+colnames(dtframe_results) <- c("Nome Portfolio","Tipo","Risco (CVaR)","Retorno","Indice de Sharpe")
+
+dtframe_results
+
+for (portfolio in portfolios_tangente){
+  retorno <- round(getPortfolio(get(portfolio))$targetReturn[['mean']],5)
+  risco <- round(getPortfolio(get(portfolio))$targetRisk[['CVaR']],5)
+  name <- gsub("_"," ",
+               gsub("portfolio_","",
+                    gsub(".tangente","",portfolio)))
+  sharpe <- round((retorno - rf) / getPortfolio(get(portfolio))$targetRisk[['VaR']],5)
+  linha <- c(name,"Tangente",risco,retorno,sharpe)
+  dtframe_results <- rbind(dtframe_results,linha) 
+}
+write.table(dtframe_results,sep=";",dec=',',)

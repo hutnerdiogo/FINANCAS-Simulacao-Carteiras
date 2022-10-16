@@ -23,6 +23,18 @@ get_adj_close_values_from_papers <- function(PAPER, from='2010-12-01', to='2022-
   names(only_close) <- PAPER
   return(only_close)
 }
+
+risco_retorno_portfolio_ingenuo <- function(retornos){
+  portfolio_uniforme <- matrix(rep(1/length(colnames(retornos)),length(colnames(retornos))))
+  media_retornos <- matrix(sapply(retornos,mean))
+  risco_retornos <- cov(retornos)
+  risco_portfolio_uniforme <- t(portfolio_uniforme) %*% risco_retornos %*% portfolio_uniforme
+  retorno_portfolio_uniforme <- t(portfolio_uniforme) %*% media_retornos
+  output <- matrix(c(risco_portfolio_uniforme^.5, retorno_portfolio_uniforme),nrow=2,ncol=1)
+  rownames(output) <- c("risco", "retorno")
+  return(output) 
+}
+
 #' Resumindo a opera, toda vez que vc chamar rodar esse codigo ->
 #' e nesse lugar você colocar o papel (⌄⌄⌄⌄⌄⌄) que deseja, ele irá retornar a coluna
 fechamento_ajustado_vale <- get_adj_close_values_from_papers("VALE3.SA")
@@ -105,6 +117,9 @@ portfolio_pequeno_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portf
 portfolio_medio_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_medio])/banco_dados_estimacao[,portfolio_medio]))
 portfolio_grande_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_grande])/banco_dados_estimacao[,portfolio_grande]))
 
+var_ibov <- as.timeSeries(log(lag(banco_dados_estimacao[,"X.5EBVSP"])/banco_dados_estimacao[,"X.5EBVSP"]))
+
+
 ##### Calculando a fronteira com o portfolio pequeno #####
 spec <- portfolioSpec()
 setNFrontierPoints(spec) <- 100
@@ -136,6 +151,19 @@ for (ativo in portfolio_pequeno){
   points(risco,media,col="Black")
   text(risco,media,ativo,col="Brown", pos = 2)
 }
+
+points(sd(var_ibov),mean(var_ibov),col="Black",pch=19)
+text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black",pos = 3)
+
+portfolio_pequeno.ingenuo <- risco_retorno_portfolio_ingenuo(portfolio_pequeno_retornos)
+
+points(portfolio_pequeno.ingenuo["risco",],portfolio_pequeno.ingenuo["retorno",],col="Black",pch=19)
+text(portfolio_pequeno.ingenuo["risco",],portfolio_pequeno.ingenuo["retorno",],'Carteira Ingenua',col="Black",pos = 3)
+
+portfolio_pequeno.min_risk <- minriskPortfolio(portfolio_pequeno_retornos)
+portfolio_pequeno.tangente <- tangencyPortfolio(portfolio_pequeno_retornos)
+
+
 ##### Calculando a fronteira com o portfolio pequeno com codigo proprio#####
 tent_portfolio_pequeno.retornos <- matrix(sapply(portfolio_pequeno_retornos, mean))
 
@@ -160,8 +188,6 @@ risco <- t(pesos) %*% tent_portfolio_pequeno.covarianca %*% pesos
 retorno
 risco^(.5)
 
-portfolio_pequeno.riscomin <- minvariancePortfolio(portfolio_pequeno_retornos)
-portfolio_pequeno.riscomin
 
 ##### Calculando a fronteira com o portfolio medio #####
 
@@ -190,6 +216,19 @@ for (ativo in portfolio_medio){
   points(risco,media,col="Black")
   text(risco,media,ativo,col="Brown", pos = 2)
 }
+
+points(sd(var_ibov),mean(var_ibov),col="Black",pch=19)
+text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black",pos = 3)
+
+portfolio_medio.ingenuo <- risco_retorno_portfolio_ingenuo(portfolio_medio_retornos)
+
+points(portfolio_medio.ingenuo["risco",],portfolio_medio.ingenuo["retorno",],col="Black",pch=19)
+text(portfolio_medio.ingenuo["risco",],portfolio_medio.ingenuo["retorno",],'Carteira Ingenua',col="Black",pos = 3)
+
+
+portfolio_medio.min_risk <- minriskPortfolio(portfolio_medio_retornos)
+portfolio_medio.tangente <- tangencyPortfolio(portfolio_medio_retornos)
+
 ##### Calculando a fronteira com o portfolio grande#####
 
 portfolio_grande.fronteira <- portfolioFrontier(portfolio_grande_retornos,spec)
@@ -214,9 +253,21 @@ for (ativo in portfolio_grande){
   media <- mean(portfolio_grande_retornos[,ativo])
   risco <- sd(portfolio_grande_retornos[,ativo])
   paste("Risco: ",risco,"\n Media: ", media, "\n Ativo:", ativo)
-  points(risco,media,col="Black")
-  text(risco,media,ativo,col="Brown", pos = 2)
+  points(risco,media,col="Green",pch=19)
+  text(risco,media,ativo,col="Brown", pos = 2,cex=0.5)
 }
+
+points(sd(var_ibov),mean(var_ibov),col="Black",pch=19)
+text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black",pos = 3)
+
+portfolio_grande.ingenuo <- risco_retorno_portfolio_ingenuo(portfolio_grande_retornos)
+
+points(portfolio_grande.ingenuo["risco",],portfolio_grande.ingenuo["retorno",],col="Black",pch=19)
+text(portfolio_grande.ingenuo["risco",],portfolio_grande.ingenuo["retorno",],'Carteira Ingenua',col="Black",pos = 3)
+
+portfolio_grande.min_risk <- minriskPortfolio(portfolio_grande_retornos)
+portfolio_grande.tangente <- tangencyPortfolio(portfolio_grande_retornos)
+
 
 #### Fronteiras ####
 resultado_pequeno <- matrix(,nrow=length(getPortfolio(portfolio_pequeno.fronteira)$targetRisk[,1]),ncol=7)
@@ -247,7 +298,6 @@ write.table(resultado_grande,"resultado_grande.csv",sep=';',dec=',')
 
 #### Analise do Ibovespa ####
 
-var_ibov <- as.timeSeries(log(lag(banco_dados_estimacao[,"X.5EBVSP"])/banco_dados_estimacao[,"X.5EBVSP"]))
 
 portfolio_ibov <- c("RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                  "ARZZ3.SA","ASAI3.SA","AZUL4.SA","B3SA3.SA","BPAN4.SA",
@@ -276,25 +326,37 @@ portfolio_ibov.frontiers <- portfolioFrontier(portfolio_ibov.have_retornos,spec)
 frontierPlot(portfolio_ibov.frontiers, col = c('blue', 'red'), pch = 20,
              risk="VaR", title = F)
 
+monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 40000, pch = 20, cex = 0.25,
+                 col="Grey")
 
 
-getPortfolio(portfolio_ibov.frontiers)$targetRisk[1,]
-media_retornos <- matrix(sapply(portfolio_ibov.retornos,mean))
-risco_retornos <- cov(portfolio_ibov.have_retornos)
-pesos <- getPortfolio(portfolio_ibov.frontiers)$weights[1,]
-pesos <- matrix(pesos)
-
-risco_portfolio <- t(pesos) %*% risco_retornos %*% pesos
-risco_portfolio^(.5)
-title(main=titulo, 
-      xlab="Risco em Desvio padrão",
+title(main="Analise do Portfolio IBOVESPA", 
+      xlab="Risco (Desvio padrão)",
       ylab="Retorno",
       cex.lab=1.5)
 
 
-points(sd(var_ibov),mean(var_ibov),col="Black")
-text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black")
+for (ativo in colnames(portfolio_ibov.have_retornos)){
+  media <- mean(portfolio_ibov.have_retornos[,ativo])
+  risco <- sd(portfolio_ibov.have_retornos[,ativo])
+  points(risco,media,col="Green",pch=19)
+}
 
-monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 400000, pch = 20, cex = 0.25,
-                 col="Grey")
+points(sd(var_ibov),mean(var_ibov),col="Black",pch=19)
+text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black",pos = 1)
 
+portfolio_uniforme.uniforme <- risco_retorno_portfolio_ingenuo(portfolio_ibov.have_retornos)
+points(portfolio_uniforme.uniforme['risco',],portfolio_uniforme.uniforme['retorno',],col="Black",pch=19)
+text(portfolio_uniforme.uniforme['risco',],portfolio_uniforme.uniforme['retorno',],'Carteira Uniforme',col="Black",pos = 3)
+
+portfolio_ibov.min_risk <- minriskPortfolio(portfolio_ibov.have_retornos)
+portfolio_ibov.tangente <- tangencyPortfolio(portfolio_ibov.have_retornos)
+
+
+#### Portfolios Setoriais ####
+setores <- read.csv("SetorEconomico.csv",sep=";")
+tipo_setores <- unique(setores[,'Setor'])
+quantidade_por_setor <- matrix(,nrow(length(tipo_setores)))
+for (item in tipo_setores){
+  length(setores[setores[,'Setor'] %in% tipo_setores,'Papel'])
+}

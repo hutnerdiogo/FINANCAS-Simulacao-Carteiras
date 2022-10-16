@@ -144,10 +144,24 @@ row.names(tent_portfolio_pequeno.retornos) <- colnames(portfolio_pequeno_retorno
 tent_portfolio_pequeno.covarianca <- cov(portfolio_pequeno_retornos)
 
 tent_portfolio_pequeno.retornos
-tent_portfolio_pequeno.covarianca
+
+pesos_brutos <- inv(tent_portfolio_pequeno.covarianca) %*% matrix(c(rep(1,length(colnames(portfolio_pequeno_retornos)))))
+pesos <- matrix(,nrow=length(portfolio_pequeno))
+rownames(pesos) <- portfolio_pequeno
+for (ativo in rownames(pesos_brutos)){
+  pesos[ativo,] <- pesos_brutos[ativo,]/sum(pesos_brutos)
+}
 
 
+retorno <- t(pesos) %*% tent_portfolio_pequeno.retornos
 
+risco <- t(pesos) %*% tent_portfolio_pequeno.covarianca %*% pesos
+
+retorno
+risco^(.5)
+
+portfolio_pequeno.riscomin <- minvariancePortfolio(portfolio_pequeno_retornos)
+portfolio_pequeno.riscomin
 
 ##### Calculando a fronteira com o portfolio medio #####
 

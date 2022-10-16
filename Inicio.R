@@ -136,7 +136,7 @@ for (ativo in portfolio_pequeno){
   points(risco,media,col="Black")
   text(risco,media,ativo,col="Brown", pos = 2)
 }
-##### Calculando a fronteira com o portfolio pequeno tentativa com codigo proprio#####
+##### Calculando a fronteira com o portfolio pequeno com codigo proprio#####
 tent_portfolio_pequeno.retornos <- matrix(sapply(portfolio_pequeno_retornos, mean))
 
 row.names(tent_portfolio_pequeno.retornos) <- colnames(portfolio_pequeno_retornos)
@@ -276,5 +276,25 @@ portfolio_ibov.frontiers <- portfolioFrontier(portfolio_ibov.have_retornos,spec)
 frontierPlot(portfolio_ibov.frontiers, col = c('blue', 'red'), pch = 20,
              risk="VaR", title = F)
 
-points(var(var_ibov),mean(var_ibov),col="Black")
-mean(banco_dados_estimacao[,'selic'])
+
+
+getPortfolio(portfolio_ibov.frontiers)$targetRisk[1,]
+media_retornos <- matrix(sapply(portfolio_ibov.retornos,mean))
+risco_retornos <- cov(portfolio_ibov.have_retornos)
+pesos <- getPortfolio(portfolio_ibov.frontiers)$weights[1,]
+pesos <- matrix(pesos)
+
+risco_portfolio <- t(pesos) %*% risco_retornos %*% pesos
+risco_portfolio^(.5)
+title(main=titulo, 
+      xlab="Risco em Desvio padrão",
+      ylab="Retorno",
+      cex.lab=1.5)
+
+
+points(sd(var_ibov),mean(var_ibov),col="Black")
+text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black")
+
+monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 400000, pch = 20, cex = 0.25,
+                 col="Grey")
+

@@ -78,6 +78,7 @@ selic <- zoo(selic_bruto[,-1],order.by = selic_bruto[,1])
 base_dados <- merge.zoo(base_dados,selic)
 base_dados <- base_dados[-1:-11,]
 base_dados <- base_dados[-145:-143,]
+base_dados[,'selic'] <- base_dados[,'selic']/10
 
 # Salvando o banco de dados 
 write.zoo(base_dados, file = "BaseDeDados.zoo", 
@@ -89,7 +90,7 @@ datas <- file[,1]
 file <- file[,-1]
 base_2 <- zoo(file,order.by = datas)
 #base_dados <- base_2
-base_dados[,'selic'] <- base_dados[,'selic']/10
+
 
 # Cortando o banco de dados amostral: 
 banco_dados_estimacao <- base_dados[1:round(length(base_dados[,5])* 73/100),]
@@ -107,7 +108,7 @@ portfolio_grande_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfo
 ##### Calculando a fronteira com o portfolio pequeno #####
 spec <- portfolioSpec()
 setNFrontierPoints(spec) <- 100
-setRiskFreeRate(spec) <- mean(banco_dados_estimacao[,'selic']/10)
+setRiskFreeRate(spec) <- mean(banco_dados_estimacao[,'selic'])
 
 
 portfolio_pequeno.fronteira <- portfolioFrontier(portfolio_pequeno_retornos,spec)
@@ -135,6 +136,18 @@ for (ativo in portfolio_pequeno){
   points(risco,media,col="Black")
   text(risco,media,ativo,col="Brown", pos = 2)
 }
+##### Calculando a fronteira com o portfolio pequeno tentativa com codigo proprio#####
+tent_portfolio_pequeno.retornos <- matrix(sapply(portfolio_pequeno_retornos, mean))
+
+row.names(tent_portfolio_pequeno.retornos) <- colnames(portfolio_pequeno_retornos)
+
+tent_portfolio_pequeno.covarianca <- cov(portfolio_pequeno_retornos)
+
+tent_portfolio_pequeno.retornos
+tent_portfolio_pequeno.covarianca
+
+
+
 
 ##### Calculando a fronteira com o portfolio medio #####
 

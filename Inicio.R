@@ -35,6 +35,13 @@ risco_retorno_portfolio_ingenuo <- function(retornos){
   return(output) 
 }
 
+price_to_variation <- function(retornos){
+  variacao <- (retornos-lag(retornos))/lag(retornos)
+  variacao <- variacao[-1]
+  return(variacao)
+}
+
+
 #' Resumindo a opera, toda vez que vc chamar rodar esse codigo ->
 #' e nesse lugar você colocar o papel (⌄⌄⌄⌄⌄⌄) que deseja, ele irá retornar a coluna
 fechamento_ajustado_vale <- get_adj_close_values_from_papers("VALE3.SA")
@@ -113,12 +120,13 @@ portfolio_pequeno <- c("BBDC3.SA","CPLE6.SA","ENGI11.SA","HYPE3.SA","TIMS3.SA")
 portfolio_medio <- c(portfolio_pequeno, "VIVT3.SA","RADL3.SA","MRFG3.SA","ENBR3.SA","BRML3.SA")
 portfolio_grande <- c(portfolio_medio,"DXCO3.SA","GGBR4.SA","PRIO3.SA","CCRO3.SA","CYRE3.SA")
 
-portfolio_pequeno_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_pequeno])/banco_dados_estimacao[,portfolio_pequeno]))
-portfolio_medio_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_medio])/banco_dados_estimacao[,portfolio_medio]))
-portfolio_grande_retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_grande])/banco_dados_estimacao[,portfolio_grande]))
+portfolio_pequeno_retornos <- as.timeSeries(price_to_variation(banco_dados_estimacao[,portfolio_pequeno]))
+portfolio_medio_retornos <- as.timeSeries(price_to_variation(banco_dados_estimacao[,portfolio_medio]))
+portfolio_grande_retornos <- as.timeSeries(price_to_variation(banco_dados_estimacao[,portfolio_grande]))
 
-var_ibov <- as.timeSeries(log(lag(banco_dados_estimacao[,"X.5EBVSP"])/banco_dados_estimacao[,"X.5EBVSP"]))
-
+var_ibov <- as.timeSeries(price_to_variation(banco_dados_estimacao[,"X.5EBVSP"]))
+sd(var_ibov)
+mean(var_ibov)
 
 ##### Calculando a fronteira com o portfolio pequeno #####
 spec <- portfolioSpec()
@@ -188,7 +196,7 @@ risco <- t(pesos) %*% tent_portfolio_pequeno.covarianca %*% pesos
 retorno
 risco^(.5)
 
-
+portfolio_pequeno.min_risk
 ##### Calculando a fronteira com o portfolio medio #####
 
 portfolio_medio.fronteira <- portfolioFrontier(portfolio_medio_retornos,spec)
@@ -326,7 +334,7 @@ portfolio_ibov.frontiers <- portfolioFrontier(portfolio_ibov.have_retornos,spec)
 frontierPlot(portfolio_ibov.frontiers, col = c('blue', 'red'), pch = 20,
              risk="VaR", title = F)
 
-monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 40000, pch = 20, cex = 0.25,
+monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 4000, pch = 20, cex = 0.25,
                  col="Grey")
 
 
@@ -349,9 +357,10 @@ portfolio_uniforme.uniforme <- risco_retorno_portfolio_ingenuo(portfolio_ibov.ha
 points(portfolio_uniforme.uniforme['risco',],portfolio_uniforme.uniforme['retorno',],col="Black",pch=19)
 text(portfolio_uniforme.uniforme['risco',],portfolio_uniforme.uniforme['retorno',],'Carteira Uniforme',col="Black",pos = 3)
 
+
+
 portfolio_ibov.min_risk <- minriskPortfolio(portfolio_ibov.have_retornos,spec)
 portfolio_ibov.tangente <- tangencyPortfolio(portfolio_ibov.have_retornos,spec)
-
 
 #### Portfolios Setoriais ####
 

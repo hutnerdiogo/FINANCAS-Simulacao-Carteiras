@@ -508,19 +508,36 @@ banco_dados_avaliacao_oscilacao <- price_to_variation(banco_dados_avaliacao)
 a <- matrix(
             Delt(
               matrix(
-                banco_dados_avaliacao, ncol=dim(banco_dados_avaliacao)[2]))
+                banco_dados_avaliacao, ncol=dim(banco_dados_avaliacao)[2]),
+              type= "arithmetic")
             ,ncol=dim(banco_dados_avaliacao)[2])
 
 colnames(a) <- colnames(banco_dados_avaliacao)
 rownames(a) <- rownames(banco_dados_avaliacao)
 banco_dados_avaliacao_oscilacao <- a[-1,]
-tail(banco_dados_avaliacao_oscilacao[,"WEGE3.SA"])
-tail(banco_dados_avaliacao[,"WEGE3.SA"])
 
 portfolios <- c("portfolio_utilidade_publica.tangente","portfolio_ibov.tangente",
                 "portfolio_grande.tangente", "portfolio_utilidade_publica.minrisk")
-
-portfolio <- get(portfolios[1])
-ativos <- names(getPortfolio(portfolio)$weights)
-
-
+for (nome_portfolio in portfolios){
+  portfolio <- get(nome_portfolio)
+  #Considerando somente os pesos que não são 0
+  pesos <- getPortfolio(portfolio)$weights[getPortfolio(portfolio)$weights != 0]
+  ativos <- names(pesos)
+  retornos <- banco_dados_avaliacao_oscilacao[,ativos]
+  valor <- 1000
+  oscilador_por_ativo <- valor * pesos
+  resultados <- matrix(ncol = dim(retornos)[2],nrow=dim(retornos)[1]+1)
+  colnames(resultados) <- ativos
+  rownames(resultados) <- c("Inicio",rownames(retornos))
+  resultados[1,] <- oscilador_por_ativo
+  resultados[2,] <- resultados[1,] * (1+retornos[1,])
+  for (ind in 2:dim(retornos)[1]+1){
+    resultados[ind,] <- resultados[ind-1,] * (1+retornos[ind-1,])
+  }
+  resultados <- cbind(resultados,valor_carteira = rowSums(resultados),rendimento_acumulado=rowSums(resultados)/1000)
+  assign(gsub("portfolio","resultado",x = nome_portfolio),resultados)
+}
+resultado_ibov.tangente
+resultado_grande.tangente
+resultado_utilidade_publica.tangente
+resultado_utilidade_publica.minrisk

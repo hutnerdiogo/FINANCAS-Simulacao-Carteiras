@@ -307,6 +307,7 @@ write.table(resultado_grande,"resultado_grande.csv",sep=';',dec=',')
 #### Analise do Ibovespa ####
 
 
+
 portfolio_ibov <- c("RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                  "ARZZ3.SA","ASAI3.SA","AZUL4.SA","B3SA3.SA","BPAN4.SA",
                  "BBSE3.SA","BRML3.SA","BBDC3.SA","BBDC4.SA","BRAP4.SA",
@@ -479,3 +480,47 @@ numeros <- c("Risco (CVaR)","Retorno","Indice de Sharpe")
 dtframe_results[,numeros] <- as.numeric(as.matrix(dtframe_results[,numeros],ncol=3,nrow=18))
 summary(dtframe_results)
 write.table(file = "Comparacao_portfolios.csv",dtframe_results,sep=";",dec=',')
+
+
+#### Coletando fronteira eficiente dos setoriais ####
+
+for (portfolio in portfolios){
+  fronteira <- get(paste(portfolio,".fronteira",sep=''))
+  colunas <- c("CVaR","mean","Sharp",colnames(getWeights(fronteira)))
+  resultado <- matrix(round(getPortfolio(fronteira)$targetRisk[,"CVaR"],4),ncol=1)
+  resultado <- cbind(resultado, round(getPortfolio(fronteira)$targetReturn[,"mean"],4))
+  sharpe <- round((getPortfolio(fronteira)$targetReturn[,"mean"] - rf)/getPortfolio(fronteira)$targetRisk[,"VaR"],4)
+  resultado <- cbind(resultado,sharpe)
+  resultado <- cbind(resultado, round(getPortfolio(fronteira)$weights,4))
+  colnames(resultado) <- colunas
+  write.table(resultado,paste(portfolio,".csv",sep=""),sep=';',dec=',')
+}
+
+#### Analisando a eficiencia do portfolio ####
+portfolio_utilidade_publica.tangente
+portfolio_ibov.tangente
+portfolio_grande.tangente
+portfolio_utilidade_publica.minrisk
+
+banco_dados_avaliacao <- base_dados[round(length(base_dados[,5])* 73/100):length(base_dados[,5]),]
+rownames(banco_dados_avaliacao) <- attr(base_dados,"index")[round(length(base_dados[,5])* 73/100):length(base_dados[,5])]
+banco_dados_avaliacao_oscilacao <- price_to_variation(banco_dados_avaliacao)
+a <- matrix(
+            Delt(
+              matrix(
+                banco_dados_avaliacao, ncol=dim(banco_dados_avaliacao)[2]))
+            ,ncol=dim(banco_dados_avaliacao)[2])
+
+colnames(a) <- colnames(banco_dados_avaliacao)
+rownames(a) <- rownames(banco_dados_avaliacao)
+banco_dados_avaliacao_oscilacao <- a[-1,]
+tail(banco_dados_avaliacao_oscilacao[,"WEGE3.SA"])
+tail(banco_dados_avaliacao[,"WEGE3.SA"])
+
+portfolios <- c("portfolio_utilidade_publica.tangente","portfolio_ibov.tangente",
+                "portfolio_grande.tangente", "portfolio_utilidade_publica.minrisk")
+
+portfolio <- get(portfolios[1])
+ativos <- names(getPortfolio(portfolio)$weights)
+
+

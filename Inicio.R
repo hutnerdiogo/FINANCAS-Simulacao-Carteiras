@@ -578,7 +578,8 @@ colnames(carteira_selic) <- "Selic"
 
 
 
-  
+## Gerando Graficos
+
 par(mar=c(4.5,4.5,4.5,4.5))
 for (resultado in resultados){
   png(file=paste("Resultado Carteiras/",resultado,".png",sep=''))
@@ -599,7 +600,5 @@ for (resultado in resultados){
   
   dev.off()
 }
-
-
 
 

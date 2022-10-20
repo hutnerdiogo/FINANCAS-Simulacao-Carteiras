@@ -2,11 +2,16 @@
 #install.packages('zoo')
 #install.packages('quantmod')
 #install.packages('fPortfolio')
+#install.packages('ggplot2')
 
 #### Iniciando os pacotes ####
 library('quantmod')
 library('zoo')
 library('fPortfolio')
+library('ggplot2')
+library('xts')
+
+
 
 #### Criando a função ####
 #' Basicamente, funções são conjuntos de codigos que são executados, mudando algumas variaveis
@@ -515,6 +520,7 @@ a <- matrix(
 colnames(a) <- colnames(banco_dados_avaliacao)
 rownames(a) <- rownames(banco_dados_avaliacao)
 banco_dados_avaliacao_oscilacao <- a[-1,]
+banco_dados_avaliacao_oscilacao[,'selic'] <- banco_dados_avaliacao[-1,'selic']
 
 portfolios <- c("portfolio_utilidade_publica.tangente","portfolio_ibov.tangente",
                 "portfolio_grande.tangente", "portfolio_utilidade_publica.minrisk")
@@ -535,9 +541,65 @@ for (nome_portfolio in portfolios){
     resultados[ind,] <- resultados[ind-1,] * (1+retornos[ind-1,])
   }
   resultados <- cbind(resultados,valor_carteira = rowSums(resultados),rendimento_acumulado=rowSums(resultados)/1000)
+  evolucao <- Delt(resultado[,'valor_carteira'])
+  resultados <- cbind(resultados,evolucao = evolucao)
+  colnames(resultados) <- c(colnames(resultados)[-dim(resultados)[2]],"evolucao")
   assign(gsub("portfolio","resultado",x = nome_portfolio),resultados)
 }
-resultado_ibov.tangente
-resultado_grande.tangente
-resultado_utilidade_publica.tangente
-resultado_utilidade_publica.minrisk
+
+resultados <- c("resultado_ibov.tangente",
+                "resultado_grande.tangente",
+                "resultado_utilidade_publica.tangente",
+                "resultado_utilidade_publica.minrisk")
+
+## Calculando o Ibovespa
+retorno_ibov <- banco_dados_avaliacao_oscilacao[,'X.5EBVSP']
+valor_inicial <- 1000
+carteira_ibov <- matrix(,nrow=length(retorno_ibov)+1)
+carteira_ibov[1,] <- 1000
+carteira_ibov[2,] <- carteira_ibov[1,] * (1 + retorno_ibov[1])
+for (ind in 2:length(retorno_ibov)+1){
+  carteira_ibov[ind,] <- carteira_ibov[ind-1,] * (1 + retorno_ibov[ind-1])
+}
+rownames(carteira_ibov) <- c("Inicio",names(retorno_ibov))
+colnames(carteira_ibov) <- "Ibovespa"
+
+## Calculando a Selic
+retorno_selic <- banco_dados_avaliacao_oscilacao[,'selic']
+valor_inicial <- 1000
+carteira_selic <- matrix(,nrow=length(retorno_selic)+1)
+carteira_selic[1,] <- 1000
+carteira_selic[2,] <- carteira_selic[1,] * (1 + retorno_selic[1])
+for (ind in 2:length(retorno_selic)+1){
+  carteira_selic[ind,] <- carteira_selic[ind-1,] * (1 + retorno_selic[ind-1])
+}
+rownames(carteira_selic) <- c("Inicio",names(retorno_selic))
+colnames(carteira_selic) <- "Selic"
+
+
+
+  
+par(mar=c(4.5,4.5,4.5,4.5))
+for (resultado in resultados){
+  png(file=paste("Resultado Carteiras/",resultado,".png",sep=''))
+  analisado <- get(resultado)
+  colnames(a)[-dim(a)[2]]
+  valor_data <- analisado[-1,'valor_carteira']
+  valor_data <- cbind(valor_data, ibov = carteira_ibov[-1],selic=carteira_selic[-1])
+  name <- gsub('_',' ', gsub('resultado_','',resultado))
+  matplot(y=valor_data[,1:3],x=as.Date(rownames(valor_data)),
+          type='l',
+          main=paste("Evolucao da carteira",name), 
+          xlab="Tempo",
+          ylab="Valor do Portfolio",
+          cex=5
+  )
+  legend("topleft", legend = c("Portfolio","Ibovespa","Selic"), col=1:2, pch=19)
+  abline(h=1000, col="red")
+  
+  dev.off()
+}
+
+
+
+

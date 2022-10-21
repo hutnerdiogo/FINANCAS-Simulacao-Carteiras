@@ -541,7 +541,7 @@ for (nome_portfolio in portfolios){
     resultados[ind,] <- resultados[ind-1,] * (1+retornos[ind-1,])
   }
   resultados <- cbind(resultados,valor_carteira = rowSums(resultados),rendimento_acumulado=rowSums(resultados)/1000)
-  evolucao <- Delt(resultado[,'valor_carteira'])
+  evolucao <- Delt(resultados[,'valor_carteira'])
   resultados <- cbind(resultados,evolucao = evolucao)
   colnames(resultados) <- c(colnames(resultados)[-dim(resultados)[2]],"evolucao")
   assign(gsub("portfolio","resultado",x = nome_portfolio),resultados)
@@ -639,16 +639,16 @@ write.table(analise_final,file="Analise Buy-Hold periodo 01-07-2019 - 01-09-2022
             sep=';',dec=',')
 
 ## Analisando dados de Retornos
+
 retornos_carteiras <- matrix(,nrow=dim(get(resultados[1]))[1]-1)
 for (resultado in resultados){
   analisado <- get(resultado)
   name <- gsub('_',' ', gsub('resultado_','',resultado))
-  retornos_carteiras <- cbind(retornos_carteiras,name=analisado[-1,'evolucao'])
+  retornos_carteiras <- cbind(retornos_carteiras,analisado[-1,'evolucao'])
   colnames(retornos_carteiras)[dim(retornos_carteiras)[2]] <- name 
 }
-
-
 retornos_carteiras <- retornos_carteiras[,-1]
+
 
 analise_final_retornos <- matrix(nrow=dim(retornos_carteiras)[2])
 rownames(analise_final_retornos) <- colnames(retornos_carteiras)
@@ -656,6 +656,7 @@ analise_final_retornos <- cbind(analise_final_retornos,Minimo_periodo = colMins(
 analise_final_retornos <- cbind(analise_final_retornos,Maximo_periodo = colMaxs(retornos_carteiras))
 analise_final_retornos <- cbind(analise_final_retornos,Desvio_padrao_periodo = colSds(retornos_carteiras))
 analise_final_retornos <- analise_final_retornos[,-1]
+analise_final_retornos <- cbind(analise_final_retornos,Media_Do_Retorno = colMeans(retornos_carteiras))
 
 correlacao <- matrix(nrow=dim(retornos_carteiras)[2])
 rownames(correlacao) <- colnames(retornos_carteiras)
@@ -665,6 +666,24 @@ for (coluna in 1:dim(retornos_carteiras)[2]){
  nome <- colnames(retornos_carteiras)[coluna]
  correlacao[nome,] <- cor(retorno_analisado,retorno_ibov)
 }
-coluna = 2
 
-analise_final_retornos <- cbind(analise_final_retornos,Desvio_padrao_periodo = colSds(retornos_carteiras))
+analise_final_retornos <- cbind(analise_final_retornos,correlacao_com_mercado = correlacao)
+colnames(analise_final_retornos)[4] <- "Correlacao com Ibovespa"
+
+sharpe <- (analise_final_retornos[,'Media_Do_Retorno'] - mean(retorno_selic)) / analise_final_retornos[,'Desvio_padrao_periodo']
+analise_final_retornos <- cbind(analise_final_retornos,sharpe=sharpe)
+analise_final_retornos <- cbind(analise_final_retornos,VaR=colVars(retornos_carteiras))
+## Fazendo a regressão, para mais dados
+regressoes <- c()
+for (resultado in colnames(retornos_carteiras)){
+  name <- paste('regressao_',gsub(' ','_',resultado),sep='')
+  retorno <- retornos_carteiras[,resultado]
+  assign(name,lm(retorno ~ retorno_ibov ))
+  regressoes <- c(regressoes,name)
+}
+
+alfa_beta <- matrix(,nrow=4)
+rownames(alfa_beta) <- colnames(todas_carteiras)
+for (reg in regressoes){
+  
+}

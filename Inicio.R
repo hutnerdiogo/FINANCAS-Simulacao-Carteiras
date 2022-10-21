@@ -682,8 +682,30 @@ for (resultado in colnames(retornos_carteiras)){
   regressoes <- c(regressoes,name)
 }
 
-alfa_beta <- matrix(,nrow=4)
+alfa_beta <- matrix(,ncol=2,nrow=4)
 rownames(alfa_beta) <- colnames(todas_carteiras)
 for (reg in regressoes){
-  
+  name <- gsub('_',' ',gsub('regressao_','',reg))
+  regr <- get(reg)
+  significantes <- summary(regr)$coefficients[, "Pr(>|t|)"] < 0.05
+  significantes <- as.integer(significantes)
+  alfa_beta[name,] <- significantes*coefficients(regr)
 }
+colnames(alfa_beta) <- c("Alfa","Beta")
+analise_final_retornos <- cbind(analise_final_retornos,alfa_beta)
+## Voltando as estatisticas
+treynor <- (analise_final_retornos[,'Media_Do_Retorno'] - mean(retorno_selic)) / analise_final_retornos[,'Beta']
+analise_final_retornos <- cbind(analise_final_retornos,treynor)
+
+write.table(analise_final_retornos,file="Resultado Carteiras/Analise portfolio periodo 01-07-2019 - 01-09-2022.csv",
+            sep=';',dec=',')
+
+#
+ativos <- list()
+for (port in portfolios){
+  temp <- list(getPortfolio(get(port))$weights[getPortfolio(get(port))$weights > 0])
+  ativos <- c(ativos, temp)
+  names(ativos)[length(ativos)] <- port
+}
+
+

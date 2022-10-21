@@ -708,4 +708,3 @@ for (port in portfolios){
   names(ativos)[length(ativos)] <- port
 }
 
-

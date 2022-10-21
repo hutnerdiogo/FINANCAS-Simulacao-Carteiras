@@ -600,5 +600,71 @@ for (resultado in resultados){
   
   dev.off()
 }
-.
+## Analisando dados Absolutos
+todas_carteiras <- matrix(,nrow=dim(get(resultados[1]))[1])
+for (resultado in resultados){
+  analisado <- get(resultado)
+  name <- gsub('_',' ', gsub('resultado_','',resultado))
+  todas_carteiras <- cbind(todas_carteiras,name=analisado[,'valor_carteira'])
+  colnames(todas_carteiras)[dim(todas_carteiras)[2]] <- name 
+}
 
+todas_carteiras <- todas_carteiras[,-1]
+matplot(y=todas_carteiras,x=as.Date(c("2019-07-01",rownames(todas_carteiras)[-1])),
+        type='l',
+        main=paste("Comparacao de carteiras"), 
+        xlab="Tempo",
+        ylab="Valor dos Portfolios",
+        cex=5
+)
+legend("topleft", legend = colnames(todas_carteiras), col=1:4, pch=19)
+abline(h=1000, col="red")
+
+
+analise_final <- matrix(nrow=length(resultados))
+rownames(analise_final) <- colnames(todas_carteiras)
+
+analise_final[,1] <- todas_carteiras[39,]
+colnames(analise_final) <- "Retorno carteira R$1000"
+analise_final <- cbind(analise_final,Valor_Inicial = todas_carteiras[1,])
+analise_final <- cbind(analise_final,Minimo_periodo = colMins(todas_carteiras))
+analise_final <- cbind(analise_final,Maximo_periodo = colMaxs(todas_carteiras))
+analise_final <- cbind(analise_final,Desvio_padrao_periodo = colSds(todas_carteiras))
+analise_final <- cbind(analise_final,Rendimento_Acumulado = todas_carteiras[39,])
+analise_final <- analise_final[,c(2,1,3:6)]
+variacao <- analise_final[,'Rendimento_Acumulado']/analise_final[,'Valor_Inicial']-1
+analise_final <- cbind(analise_final,
+                       Rendimento_Acumulado_percentual=variacao)
+write.table(analise_final,file="Analise Buy-Hold periodo 01-07-2019 - 01-09-2022.csv",
+            sep=';',dec=',')
+
+## Analisando dados de Retornos
+retornos_carteiras <- matrix(,nrow=dim(get(resultados[1]))[1]-1)
+for (resultado in resultados){
+  analisado <- get(resultado)
+  name <- gsub('_',' ', gsub('resultado_','',resultado))
+  retornos_carteiras <- cbind(retornos_carteiras,name=analisado[-1,'evolucao'])
+  colnames(retornos_carteiras)[dim(retornos_carteiras)[2]] <- name 
+}
+
+
+retornos_carteiras <- retornos_carteiras[,-1]
+
+analise_final_retornos <- matrix(nrow=dim(retornos_carteiras)[2])
+rownames(analise_final_retornos) <- colnames(retornos_carteiras)
+analise_final_retornos <- cbind(analise_final_retornos,Minimo_periodo = colMins(retornos_carteiras))
+analise_final_retornos <- cbind(analise_final_retornos,Maximo_periodo = colMaxs(retornos_carteiras))
+analise_final_retornos <- cbind(analise_final_retornos,Desvio_padrao_periodo = colSds(retornos_carteiras))
+analise_final_retornos <- analise_final_retornos[,-1]
+
+correlacao <- matrix(nrow=dim(retornos_carteiras)[2])
+rownames(correlacao) <- colnames(retornos_carteiras)
+
+for (coluna in 1:dim(retornos_carteiras)[2]){
+ retorno_analisado <- retornos_carteiras[,coluna]
+ nome <- colnames(retornos_carteiras)[coluna]
+ correlacao[nome,] <- cor(retorno_analisado,retorno_ibov)
+}
+coluna = 2
+
+analise_final_retornos <- cbind(analise_final_retornos,Desvio_padrao_periodo = colSds(retornos_carteiras))

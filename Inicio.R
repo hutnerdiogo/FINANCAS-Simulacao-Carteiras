@@ -600,5 +600,5 @@ for (resultado in resultados){
   
   dev.off()
 }
-
+.
 

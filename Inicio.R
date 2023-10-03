@@ -17,7 +17,7 @@ library('xts')
 #' Basicamente, funções são conjuntos de codigos que são executados, mudando algumas variaveis
 #' nesse caso a função chama "get_adj_close_values_from_papers" e quando iniciar ela
 #' são passadas variaveis que são declaradas aqui ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
-get_adj_close_values_from_papers <- function(PAPER, from='2010-12-01', to='2022-10-01'){
+get_adj_close_values_from_papers <- function(PAPER, from='2010-12-01', to='2023-10-01'){
   df_intc <- getSymbols(PAPER,
                         src='yahoo',
                         from=from,
@@ -70,12 +70,12 @@ base_dados <- zoo(,order.by = periodo)
 # *** TEM QUE ESTAR COM O NOME IGUAL O DA LISTA QUE PASSEI 
 ativos_desejados <-  c("%5EBVSP","RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                        "ARZZ3.SA","ASAI3.SA","AZUL4.SA","B3SA3.SA","BPAN4.SA",
-                       "BBSE3.SA","BRML3.SA","BBDC3.SA","BBDC4.SA","BRAP4.SA",
+                       "BBSE3.SA","BBDC3.SA","BBDC4.SA","BRAP4.SA",
                        "BBAS3.SA","BRKM5.SA","BRFS3.SA","BPAC11.SA","CRFB3.SA",
                        "CCRO3.SA","CMIG4.SA","CIEL3.SA","COGN3.SA","CPLE6.SA",
                        "CSAN3.SA","CPFE3.SA","CMIN3.SA","CVCB3.SA","CYRE3.SA",
                        "DXCO3.SA","ECOR3.SA","ELET3.SA","ELET6.SA","EMBR3.SA",
-                       "ENBR3.SA","ENGI11.SA","ENEV3.SA","EGIE3.SA","EQTL3.SA",
+                       "ENGI11.SA","ENEV3.SA","EGIE3.SA","EQTL3.SA",
                        "EZTC3.SA","FLRY3.SA","GGBR4.SA","GOAU4.SA","GOLL4.SA",
                        "NTCO3.SA","SOMA3.SA","HAPV3.SA","HYPE3.SA","IGTI11.SA",
                        "IRBR3.SA","ITSA4.SA","ITUB4.SA","JBSS3.SA","KLBN11.SA",
@@ -84,9 +84,9 @@ ativos_desejados <-  c("%5EBVSP","RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                        "PETR3.SA","PETR4.SA","PRIO3.SA","PETZ3.SA","POSI3.SA",
                        "QUAL3.SA","RADL3.SA","RAIZ4.SA","RDOR3.SA","RAIL3.SA",
                        "SBSP3.SA","SANB11.SA","SMTO3.SA","CSNA3.SA","SLCE3.SA",
-                       "SULA11.SA","SUZB3.SA","TAEE11.SA","VIVT3.SA","TIMS3.SA",
+                       "SUZB3.SA","TAEE11.SA","VIVT3.SA","TIMS3.SA",
                        "TOTS3.SA","UGPA3.SA","USIM5.SA","VALE3.SA","VIIA3.SA",
-                       "VBBR3.SA","WEGE3.SA","YDUQ3.SA")
+                       "WEGE3.SA","YDUQ3.SA")
 
 #' Basicamente isso vai listar cada "ativo" em ativos desejados, ou seja, 
 #' no caso do VALE3.SA e PETR3.SA, vai rodar o codigo inteiro uma vez para o VALE
@@ -122,14 +122,14 @@ banco_dados_estimacao <- base_dados[1:round(length(base_dados[,5])* 73/100),]
 
 #### Montar Portfolio ####
 portfolio_pequeno <- c("BBDC3.SA","CPLE6.SA","ENGI11.SA","HYPE3.SA","TIMS3.SA")
-portfolio_medio <- c(portfolio_pequeno, "VIVT3.SA","RADL3.SA","MRFG3.SA","ENBR3.SA","BRML3.SA")
+portfolio_medio <- c(portfolio_pequeno, "VIVT3.SA","RADL3.SA","MRFG3.SA","MULT3.SA","ELET3.SA")
 portfolio_grande <- c(portfolio_medio,"DXCO3.SA","GGBR4.SA","PRIO3.SA","CCRO3.SA","CYRE3.SA")
 
 portfolio_pequeno_retornos <- as.timeSeries(price_to_variation(banco_dados_estimacao[,portfolio_pequeno]))
 portfolio_medio_retornos <- as.timeSeries(price_to_variation(banco_dados_estimacao[,portfolio_medio]))
 portfolio_grande_retornos <- as.timeSeries(price_to_variation(banco_dados_estimacao[,portfolio_grande]))
 
-var_ibov <- as.timeSeries(price_to_variation(banco_dados_estimacao[,"X.5EBVSP"]))
+var_ibov <- as.timeSeries(price_to_variation(banco_dados_estimacao[,"%5EBVSP"]))
 sd(var_ibov)
 mean(var_ibov)
 
@@ -137,7 +137,6 @@ mean(var_ibov)
 spec <- portfolioSpec()
 setNFrontierPoints(spec) <- 100
 setRiskFreeRate(spec) <- mean(banco_dados_estimacao[,'selic'])
-
 
 portfolio_pequeno.fronteira <- portfolioFrontier(portfolio_pequeno_retornos,spec)
 
@@ -315,12 +314,12 @@ write.table(resultado_grande,"resultado_grande.csv",sep=';',dec=',')
 
 portfolio_ibov <- c("RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                  "ARZZ3.SA","ASAI3.SA","AZUL4.SA","B3SA3.SA","BPAN4.SA",
-                 "BBSE3.SA","BRML3.SA","BBDC3.SA","BBDC4.SA","BRAP4.SA",
+                 "BBSE3.SA","BBDC3.SA","BBDC4.SA","BRAP4.SA",
                  "BBAS3.SA","BRKM5.SA","BRFS3.SA","BPAC11.SA","CRFB3.SA",
                  "CCRO3.SA","CMIG4.SA","CIEL3.SA","COGN3.SA","CPLE6.SA",
                  "CSAN3.SA","CPFE3.SA","CMIN3.SA","CVCB3.SA","CYRE3.SA",
                  "DXCO3.SA","ECOR3.SA","ELET3.SA","ELET6.SA","EMBR3.SA",
-                 "ENBR3.SA","ENGI11.SA","ENEV3.SA","EGIE3.SA","EQTL3.SA",
+                 "ENGI11.SA","ENEV3.SA","EGIE3.SA","EQTL3.SA",
                  "EZTC3.SA","FLRY3.SA","GGBR4.SA","GOAU4.SA","GOLL4.SA",
                  "NTCO3.SA","SOMA3.SA","HAPV3.SA","HYPE3.SA","IGTI11.SA",
                  "IRBR3.SA","ITSA4.SA","ITUB4.SA","JBSS3.SA","KLBN11.SA",
@@ -329,9 +328,12 @@ portfolio_ibov <- c("RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                  "PETR3.SA","PETR4.SA","PRIO3.SA","PETZ3.SA","POSI3.SA",
                  "QUAL3.SA","RADL3.SA","RAIZ4.SA","RDOR3.SA","RAIL3.SA",
                  "SBSP3.SA","SANB11.SA","SMTO3.SA","CSNA3.SA","SLCE3.SA",
-                 "SULA11.SA","SUZB3.SA","TAEE11.SA","VIVT3.SA","TIMS3.SA",
+                 "SUZB3.SA","TAEE11.SA","VIVT3.SA","TIMS3.SA",
                  "TOTS3.SA","UGPA3.SA","USIM5.SA","VALE3.SA","VIIA3.SA",
                  "VBBR3.SA","WEGE3.SA","YDUQ3.SA")
+
+#elementos_faltantes <- setdiff(portfolio_ibov, unique(colnames(banco_dados_estimacao)))
+
 
 portfolio_ibov.retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_ibov])/banco_dados_estimacao[,portfolio_ibov]))
 portfolio_ibov.have_retornos <- portfolio_ibov.retornos[,!as.logical(colSums(is.na(portfolio_ibov.retornos)))]
@@ -340,7 +342,7 @@ portfolio_ibov.frontiers <- portfolioFrontier(portfolio_ibov.have_retornos,spec)
 frontierPlot(portfolio_ibov.frontiers, col = c('blue', 'red'), pch = 20,
              risk="VaR", title = F)
 
-monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 4000, pch = 20, cex = 0.25,
+monteCarloPoints(portfolio_ibov.frontiers, mcSteps = 16000, pch = 20, cex = 0.25,
                  col="Grey")
 
 
@@ -389,6 +391,13 @@ nome_setores <- rownames(quantidade_por_setor)[quantidade_por_setor[,1] > 10]
 
 portfolios <- c()
 for (setor in nome_setores){
+  ativos <- setores[setores[,'Setor'] == setor,'Papel']
+  print(setor)
+  print(ativos)
+}
+
+
+for (setor in nome_setores){
   name_var <- tolower(paste("portfolio_",iconv(gsub(" ","_",setor,fixed = T),to="ASCII//TRANSLIT"),sep=""))
   portfolios <- c(portfolios, name_var)
   ativos <- setores[setores[,'Setor'] == setor,'Papel']
@@ -399,6 +408,13 @@ for (setor in nome_setores){
   portfolio_retorno2 <- portfolio_retorno[,!colSums(is.na(portfolio_retorno)) > 1]
   assign(paste(name_var,".retorno",sep=""), portfolio_retorno2)
 }
+
+colnames(portfolio_bens_industriais.retorno)
+colnames(portfolio_consumo_nao_ciclico.retorno)
+colnames(portfolio_materiais_basicos.retorno)
+colnames(portfolio_utilidade_publica.retorno)
+colnames(portfolio_financeiro.retorno)
+
 
 for (portfolio in portfolios){
   assign(paste(portfolio,".ingenua",sep=""),
@@ -425,6 +441,17 @@ for (portfolio in portfolios){
   
   points(sd(var_ibov),mean(var_ibov),col="Black",pch=19)
   text(sd(var_ibov),mean(var_ibov),'Ibovespa',col="Black",pos = 1)
+  
+  
+  ret_port <- get(paste(portfolio,".retorno",sep=""))
+  for (ativo in colnames(ret_port)){
+    media <- mean(ret_port[,ativo])
+    risco <- sd(ret_port[,ativo])
+    paste("Risco: ",risco,"\n Media: ", media, "\n Ativo:", ativo)
+    points(risco,media,col="Green",pch=19)
+    text(risco,media,ativo,col="Brown", pos = 2,cex=0.5)
+  }
+  
   
   
   dev.off()
@@ -553,7 +580,7 @@ resultados <- c("resultado_ibov.tangente",
                 "resultado_utilidade_publica.minrisk")
 
 ## Calculando o Ibovespa
-retorno_ibov <- banco_dados_avaliacao_oscilacao[,'X.5EBVSP']
+retorno_ibov <- banco_dados_avaliacao_oscilacao[,'%5EBVSP']
 valor_inicial <- 1000
 carteira_ibov <- matrix(,nrow=length(retorno_ibov)+1)
 carteira_ibov[1,] <- 1000

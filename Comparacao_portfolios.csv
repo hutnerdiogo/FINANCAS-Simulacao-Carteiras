@@ -1,0 +1,19 @@
+"Nome Portfolio";"Tipo";"Risco (CVaR)";"Retorno";"Indice de Sharpe"
+"1";"ibov";"Risco Minimo";0,04109;0,01074;-2,08662
+"2";"grande";"Risco Minimo";0,08868;-0,01054;-1,22707
+"3";"medio";"Risco Minimo";0,08729;-0,01082;-1,17673
+"4";"pequeno";"Risco Minimo";0,11601;-0,01163;-0,9488
+"5";"materiais basicos";"Risco Minimo";0,0881;0,00688;-0,87596
+"6";"bens industriais";"Risco Minimo";0,07428;0,01263;-1,35751
+"7";"consumo nao ciclico";"Risco Minimo";0,07053;0,00713;-1,16464
+"8";"utilidade publica";"Risco Minimo";0,08136;0,01573;-0,97429
+"9";"financeiro";"Risco Minimo";0,10109;0,00884;-0,92565
+"10";"ibov";"Tangente";0,51398;-0,02002;-0,28756
+"11";"grande";"Tangente";0,24898;0,0284;-0,26231
+"12";"medio";"Tangente";0,24455;0,01285;-0,3077
+"13";"pequeno";"Tangente";0,16178;-0,00137;-0,65793
+"14";"materiais basicos";"Tangente";0,11071;0,00809;-0,96971
+"15";"bens industriais";"Tangente";0,08486;0,01593;-1,08724
+"16";"consumo nao ciclico";"Tangente";0,09277;0,01012;-0,9425
+"17";"utilidade publica";"Tangente";0,09236;0,0212;-0,98671
+"18";"financeiro";"Tangente";0,11759;0,01094;-0,76824

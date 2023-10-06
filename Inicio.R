@@ -330,9 +330,9 @@ portfolio_ibov <- c("RRRP3.SA","ALPA4.SA","ABEV3.SA","AMER3.SA",
                  "SBSP3.SA","SANB11.SA","SMTO3.SA","CSNA3.SA","SLCE3.SA",
                  "SUZB3.SA","TAEE11.SA","VIVT3.SA","TIMS3.SA",
                  "TOTS3.SA","UGPA3.SA","USIM5.SA","VALE3.SA","VIIA3.SA",
-                 "VBBR3.SA","WEGE3.SA","YDUQ3.SA")
+                 "WEGE3.SA","YDUQ3.SA")
 
-#elementos_faltantes <- setdiff(portfolio_ibov, unique(colnames(banco_dados_estimacao)))
+elementos_faltantes <- setdiff(portfolio_ibov, unique(colnames(banco_dados_estimacao)))
 
 
 portfolio_ibov.retornos <- as.timeSeries(log(lag(banco_dados_estimacao[,portfolio_ibov])/banco_dados_estimacao[,portfolio_ibov]))
@@ -530,7 +530,7 @@ for (portfolio in portfolios){
 
 #### Analisando a eficiencia do portfolio ####
 portfolio_utilidade_publica.tangente
-portfolio_ibov.tangente
+portfolio_ibov.min_risk
 portfolio_grande.tangente
 portfolio_utilidade_publica.minrisk
 
@@ -545,7 +545,7 @@ a <- matrix(
             ,ncol=dim(banco_dados_avaliacao)[2])
 
 colnames(a) <- colnames(banco_dados_avaliacao)
-rownames(a) <- rownames(banco_dados_avaliacao)
+rownames(a) <- index(banco_dados_avaliacao)
 banco_dados_avaliacao_oscilacao <- a[-1,]
 banco_dados_avaliacao_oscilacao[,'selic'] <- banco_dados_avaliacao[-1,'selic']
 
@@ -615,7 +615,7 @@ for (resultado in resultados){
   valor_data <- analisado[-1,'valor_carteira']
   valor_data <- cbind(valor_data, ibov = carteira_ibov[-1],selic=carteira_selic[-1])
   name <- gsub('_',' ', gsub('resultado_','',resultado))
-  matplot(y=valor_data[,1:3],x=as.Date(rownames(valor_data)),
+  matplot(y=valor_data[,1:3],x=valor_data,
           type='l',
           main=paste("Evolucao da carteira",name), 
           xlab="Tempo",

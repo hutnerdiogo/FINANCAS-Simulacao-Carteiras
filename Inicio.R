@@ -3,6 +3,14 @@
 #install.packages('quantmod')
 #install.packages('fPortfolio')
 #install.packages('ggplot2')
+install.packages('fractaldim')
+system.file(package = "fractaldim")
+library('fractaldim')
+getAnywhere(fd.HallWood)
+getAnywhere(fd.estim.genton)
+getAnywhere(fd.estim.hallwood)
+
+
 
 #### Iniciando os pacotes ####
 library('quantmod')
@@ -535,37 +543,57 @@ portfolio_grande.tangente
 portfolio_utilidade_publica.minrisk
 
 banco_dados_avaliacao <- base_dados[round(length(base_dados[,5])* 73/100):length(base_dados[,5]),]
+banco_dados_avaliacao
+
 rownames(banco_dados_avaliacao) <- attr(base_dados,"index")[round(length(base_dados[,5])* 73/100):length(base_dados[,5])]
-banco_dados_avaliacao_oscilacao <- price_to_variation(banco_dados_avaliacao)
-a <- matrix(
-            Delt(
-              matrix(
-                banco_dados_avaliacao, ncol=dim(banco_dados_avaliacao)[2]),
-              type= "arithmetic")
-            ,ncol=dim(banco_dados_avaliacao)[2])
 
-colnames(a) <- colnames(banco_dados_avaliacao)
-rownames(a) <- index(banco_dados_avaliacao)
-banco_dados_avaliacao_oscilacao <- a[-1,]
-banco_dados_avaliacao_oscilacao[,'selic'] <- banco_dados_avaliacao[-1,'selic']
+banco_dados_avaliacao_oscilacao <- (apply(banco_dados_avaliacao, 2, diff) / banco_dados_avaliacao[-nrow(banco_dados_avaliacao),])
 
-portfolios <- c("portfolio_utilidade_publica.tangente","portfolio_ibov.tangente",
+banco_dados_avaliacao[,'LREN3.SA']
+
+banco_dados_avaliacao_oscilacao[,'LREN3.SA']
+
+#a <- matrix(
+#            Delt(
+#              matrix(
+#                banco_dados_avaliacao, ncol=dim(banco_dados_avaliacao)[2]),
+#              type= "arithmetic")
+#            ,ncol=dim(banco_dados_avaliacao)[2])
+
+#colnames(a) <- colnames(banco_dados_avaliacao)
+#rownames(a) <- as.Date(index(banco_dados_avaliacao))
+
+#banco_dados_avaliacao_oscilacao <- a[-1,]
+banco_dados_avaliacao_oscilacao[,'selic'] <- banco_dados_avaliacao[1:41,'selic']
+banco_dados_avaliacao_oscilacao[,1] 
+
+portfolios <- c("portfolio_utilidade_publica.tangente","portfolio_financeiro.tangente",
                 "portfolio_grande.tangente", "portfolio_utilidade_publica.minrisk")
 for (nome_portfolio in portfolios){
   portfolio <- get(nome_portfolio)
-  #Considerando somente os pesos que não são 0
+  # Considerando somente os pesos que não são 0
   pesos <- getPortfolio(portfolio)$weights[getPortfolio(portfolio)$weights != 0]
   ativos <- names(pesos)
   retornos <- banco_dados_avaliacao_oscilacao[,ativos]
   valor <- 1000
   oscilador_por_ativo <- valor * pesos
-  resultados <- matrix(ncol = dim(retornos)[2],nrow=dim(retornos)[1]+1)
+  #resultados <- data.frame(ncol = dim(retornos)[2],nrow=dim(retornos)[1]+1)
+  
+  num_colunas <- dim(retornos)[2]
+  num_linhas <- dim(retornos)[1]
+  
+  matriz_vazia <- matrix(NA, ncol = num_colunas, nrow = num_linhas)
+  
+  resultados <- as.data.frame(matriz_vazia)
   colnames(resultados) <- ativos
-  rownames(resultados) <- c("Inicio",rownames(retornos))
+  rownames(resultados) <- as.Date(index(retornos), format = "%d/%m/%Y")
+  
   resultados[1,] <- oscilador_por_ativo
-  resultados[2,] <- resultados[1,] * (1+retornos[1,])
-  for (ind in 2:dim(retornos)[1]+1){
-    resultados[ind,] <- resultados[ind-1,] * (1+retornos[ind-1,])
+  
+  resultados[2,] <- as.numeric(resultados[1,]) * (1+retornos[1,])
+  
+  for (ind in 2:dim(retornos)[1]){
+    resultados[ind,] <- as.numeric(resultados[ind-1,]) * (1+retornos[ind-1,])
   }
   resultados <- cbind(resultados,valor_carteira = rowSums(resultados),rendimento_acumulado=rowSums(resultados)/1000)
   evolucao <- Delt(resultados[,'valor_carteira'])
@@ -574,7 +602,7 @@ for (nome_portfolio in portfolios){
   assign(gsub("portfolio","resultado",x = nome_portfolio),resultados)
 }
 
-resultados <- c("resultado_ibov.tangente",
+resultados <- c("resultado_financeiro.tangente",
                 "resultado_grande.tangente",
                 "resultado_utilidade_publica.tangente",
                 "resultado_utilidade_publica.minrisk")
@@ -594,13 +622,21 @@ colnames(carteira_ibov) <- "Ibovespa"
 ## Calculando a Selic
 retorno_selic <- banco_dados_avaliacao_oscilacao[,'selic']
 valor_inicial <- 1000
-carteira_selic <- matrix(,nrow=length(retorno_selic)+1)
+
+num_colunas <- 1
+num_linhas <- dim(retornos)[1]
+
+matriz_vazia <- matrix(NA, ncol = num_colunas, nrow = num_linhas)
+
+carteira_selic <- as.data.frame(matriz_vazia)
+
 carteira_selic[1,] <- 1000
-carteira_selic[2,] <- carteira_selic[1,] * (1 + retorno_selic[1])
+retorno_selic_sujo = 0.0073
+carteira_selic[2,] <- as.numeric(carteira_selic[1,]) * (1 + retorno_selic_sujo)
 for (ind in 2:length(retorno_selic)+1){
-  carteira_selic[ind,] <- carteira_selic[ind-1,] * (1 + retorno_selic[ind-1])
+  carteira_selic[ind,] <- as.numeric(carteira_selic[ind-1,]) * (1 + retorno_selic_sujo)
 }
-rownames(carteira_selic) <- c("Inicio",names(retorno_selic))
+rownames(carteira_selic) <- as.Date(index(retornos), format = "%d/%m/%Y")
 colnames(carteira_selic) <- "Selic"
 
 
@@ -612,23 +648,32 @@ for (resultado in resultados){
   png(file=paste("Resultado Carteiras/",resultado,".png",sep=''))
   analisado <- get(resultado)
   colnames(a)[-dim(a)[2]]
-  valor_data <- analisado[-1,'valor_carteira']
-  valor_data <- cbind(valor_data, ibov = carteira_ibov[-1],selic=carteira_selic[-1])
+  valor_data <- analisado['valor_carteira']
+  length(valor_data[,'valor_carteira'])
+  length(carteira_ibov)
+  valor_data <- cbind(valor_data, ibov = carteira_ibov[-42,'Ibovespa'],selic=carteira_selic[-42,'Selic'])
   name <- gsub('_',' ', gsub('resultado_','',resultado))
-  matplot(y=valor_data[,1:3],x=valor_data,
+  matplot(y=valor_data[,1:3],
+          x=as.Date(rownames(valor_data)),
           type='l',
           main=paste("Evolucao da carteira",name), 
           xlab="Tempo",
           ylab="Valor do Portfolio",
           cex=5
   )
-  legend("topleft", legend = c("Portfolio","Ibovespa","Selic"), col=1:2, pch=19)
+  legend("topleft", legend = c("Portfolio","Ibovespa","Selic"), col=1:3, pch=19)
   abline(h=1000, col="red")
   
   dev.off()
 }
 ## Analisando dados Absolutos
-todas_carteiras <- matrix(,nrow=dim(get(resultados[1]))[1])
+
+num_colunas <- 1
+num_linhas <- dim(get(resultados[1]))[1]
+
+matriz_vazia <- matrix(NA, ncol = num_colunas, nrow = num_linhas)
+
+todas_carteiras <- as.data.frame(matriz_vazia)
 for (resultado in resultados){
   analisado <- get(resultado)
   name <- gsub('_',' ', gsub('resultado_','',resultado))
@@ -636,28 +681,39 @@ for (resultado in resultados){
   colnames(todas_carteiras)[dim(todas_carteiras)[2]] <- name 
 }
 
+rownames(todas_carteiras) <- rownames(resultado_utilidade_publica.minrisk)
 todas_carteiras <- todas_carteiras[,-1]
-matplot(y=todas_carteiras,x=as.Date(c("2019-07-01",rownames(todas_carteiras)[-1])),
+
+matplot(y=todas_carteiras,
+        x=as.Date(rownames(todas_carteiras)),
         type='l',
         main=paste("Comparacao de carteiras"), 
         xlab="Tempo",
         ylab="Valor dos Portfolios",
-        cex=5
+        cex=30,
+        lwd=2
 )
 legend("topleft", legend = colnames(todas_carteiras), col=1:4, pch=19)
 abline(h=1000, col="red")
 
 
-analise_final <- matrix(nrow=length(resultados))
+
+num_colunas <- 1
+num_linhas <- length(resultados)
+
+matriz_vazia <- matrix(NA, ncol = num_colunas, nrow = num_linhas)
+
+analise_final <- as.data.frame(matriz_vazia)
+
 rownames(analise_final) <- colnames(todas_carteiras)
 
-analise_final[,1] <- todas_carteiras[39,]
-colnames(analise_final) <- "Retorno carteira R$1000"
-analise_final <- cbind(analise_final,Valor_Inicial = todas_carteiras[1,])
-analise_final <- cbind(analise_final,Minimo_periodo = colMins(todas_carteiras))
-analise_final <- cbind(analise_final,Maximo_periodo = colMaxs(todas_carteiras))
-analise_final <- cbind(analise_final,Desvio_padrao_periodo = colSds(todas_carteiras))
-analise_final <- cbind(analise_final,Rendimento_Acumulado = todas_carteiras[39,])
+analise_final[,1] <- c(t(todas_carteiras[39,]))
+colnames(analise_final) <- c("Retorno carteira R$1000")
+analise_final <- cbind(analise_final,Valor_Inicial = c(t(todas_carteiras[1,])))
+analise_final <- cbind(analise_final,Minimo_periodo = c(t(colMins(todas_carteiras))))
+analise_final <- cbind(analise_final,Maximo_periodo = c(t(colMaxs(todas_carteiras))))
+analise_final <- cbind(analise_final,Desvio_padrao_periodo = c(t(colSds(todas_carteiras))))
+analise_final <- cbind(analise_final,Rendimento_Acumulado = c(t(todas_carteiras[39,])))
 analise_final <- analise_final[,c(2,1,3:6)]
 variacao <- analise_final[,'Rendimento_Acumulado']/analise_final[,'Valor_Inicial']-1
 analise_final <- cbind(analise_final,
@@ -691,21 +747,24 @@ rownames(correlacao) <- colnames(retornos_carteiras)
 for (coluna in 1:dim(retornos_carteiras)[2]){
  retorno_analisado <- retornos_carteiras[,coluna]
  nome <- colnames(retornos_carteiras)[coluna]
- correlacao[nome,] <- cor(retorno_analisado,retorno_ibov)
+ correlacao[nome,] <- cor(retorno_analisado,retorno_ibov[-40,])
 }
 
+
 analise_final_retornos <- cbind(analise_final_retornos,correlacao_com_mercado = correlacao)
-colnames(analise_final_retornos)[4] <- "Correlacao com Ibovespa"
+colnames(analise_final_retornos)[5] <- "Correlacao com Ibovespa"
 
 sharpe <- (analise_final_retornos[,'Media_Do_Retorno'] - mean(retorno_selic)) / analise_final_retornos[,'Desvio_padrao_periodo']
 analise_final_retornos <- cbind(analise_final_retornos,sharpe=sharpe)
 analise_final_retornos <- cbind(analise_final_retornos,VaR=colVars(retornos_carteiras))
+#analise_final_retornos <- analise_final_retornos[,-5]
+
 ## Fazendo a regressão, para mais dados
 regressoes <- c()
-for (resultado in colnames(retornos_carteiras)){
+for (resultado in rownames(analise_final_retornos)){
   name <- paste('regressao_',gsub(' ','_',resultado),sep='')
   retorno <- retornos_carteiras[,resultado]
-  assign(name,lm(retorno ~ retorno_ibov ))
+  assign(name,lm(retorno ~ retorno_ibov[-41,]))
   regressoes <- c(regressoes,name)
 }
 
